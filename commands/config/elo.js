@@ -67,11 +67,8 @@ module.exports = {
 
 					const roles = member.roles.cache;
 
-					console.log(cargos_elos[category]);
 					roles.forEach(async (role) => {
 						if (cargos_elos[category].includes(role.id)) {
-							console.log(`TEM O CARGO ${role.name}`);
-
 							const guildRole = guild.roles.cache.get(role.id);
 							await member.roles.remove(guildRole);
 						}

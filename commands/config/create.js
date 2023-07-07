@@ -24,57 +24,64 @@ module.exports = {
 
 		switch (interaction.options._subcommand) {
 			case 'fila-log':
-				let guild = getGuildInData(guildId);
+				if (interaction.user.id == '303671981440499712') {
+					let guild = getGuildInData(guildId);
 
-				if (guild) {
-					const oldChannelId = guild.queue_log.channelId;
-					const channelId = options[0].value;
-					const messageId = guild.queue_log.messageId;
-					const channel = interaction.client.channels.cache.get(channelId);
+					if (guild) {
+						const oldChannelId = guild.queue_log.channelId;
+						const channelId = options[0].value;
+						const messageId = guild.queue_log.messageId;
+						const channel = interaction.client.channels.cache.get(channelId);
 
-					const logMessage = log_message(queue_1v1, queue_2v2);
+						const logMessage = log_message(queue_1v1, queue_2v2);
 
-					let data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
+						let data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
 
-					if (messageId != '') {
-						const oldChannel = interaction.client.channels.cache.get(oldChannelId);
+						if (messageId != '') {
+							const oldChannel = interaction.client.channels.cache.get(oldChannelId);
 
-						guild.queue_log.messageId = '';
+							guild.queue_log.messageId = '';
 
-						oldChannel.messages
-							.fetch(messageId)
-							.then((message) => {
-								if (message.author.id === clientId) {
-									message.delete().catch(console.error);
-								}
+							oldChannel.messages
+								.fetch(messageId)
+								.then((message) => {
+									if (message.author.id === clientId) {
+										message.delete().catch(console.error);
+									}
 
-								setTimeout(
-									() =>
-										channel
-											.send({ embeds: [logMessage] })
-											.then((message) => {
-												guild.queue_log.channelId = channelId;
-												guild.queue_log.messageId = message.id;
-												data.guilds = guilds;
+									setTimeout(
+										() =>
+											channel
+												.send({ embeds: [logMessage] })
+												.then((message) => {
+													guild.queue_log.channelId = channelId;
+													guild.queue_log.messageId = message.id;
+													data.guilds = guilds;
 
-												fs.writeFileSync('./data.json', JSON.stringify(data));
-											})
-											.catch(console.error),
-									2000
-								);
-							})
-							.catch(console.error);
-					} else
-						channel
-							.send({ embeds: [logMessage] })
-							.then((message) => {
-								guild.queue_log.channelId = channelId;
-								guild.queue_log.messageId = message.id;
-								data.guilds = guilds;
+													fs.writeFileSync('./data.json', JSON.stringify(data));
+												})
+												.catch(console.error),
+										2000
+									);
+								})
+								.catch(console.error);
+						} else
+							channel
+								.send({ embeds: [logMessage] })
+								.then((message) => {
+									guild.queue_log.channelId = channelId;
+									guild.queue_log.messageId = message.id;
+									data.guilds = guilds;
 
-								fs.writeFileSync('./data.json', JSON.stringify(data));
-							})
-							.catch(console.error);
+									fs.writeFileSync('./data.json', JSON.stringify(data));
+								})
+								.catch(console.error);
+					}
+				} else {
+					await interaction.reply({
+						content: 'Você não tem permissão.',
+						ephemeral: true,
+					});
 				}
 
 				break;
