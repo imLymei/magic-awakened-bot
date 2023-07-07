@@ -1,9 +1,10 @@
-const { SlashCommandBuilder, userMention } = require('discord.js');
-const getUserInData = require('../../utils/getUserInData');
 const { elos } = require('../../data.json');
+const editQueueLog = require('../../utils/editQueueLog');
+const getUserInData = require('../../utils/getUserInData');
+const { queue_1v1 } = require('../../utils/queue');
 const sendUserMessage = require('../../utils/sendUserMessage');
+const { SlashCommandBuilder, userMention } = require('discord.js');
 
-let queue = [];
 let matches = [];
 
 const searchInterval = 10000;
@@ -12,10 +13,11 @@ const messageInterval = 3000;
 let intervalId = null;
 
 function searchPlayers(interaction) {
-	if (queue.length > 1) {
-		const first = queue[0];
+	editQueueLog(interaction.client, interaction.commandGuildId, queue_1v1.length, queue_1v1.length);
+	if (queue_1v1.length > 1) {
+		const first = queue_1v1[0];
 
-		const opponents = queue.filter((player) => {
+		const opponents = queue_1v1.filter((player) => {
 			if (player.id !== first.id) {
 				const diference = parseInt(first.elo) - parseInt(player.elo);
 
@@ -45,10 +47,10 @@ function searchPlayers(interaction) {
 
 			setTimeout(() => sendUserMessage(interaction.client, first.id, firstMessage), messageInterval);
 
-			queue.shift();
-			queue.splice(randomNumber, 1);
+			queue_1v1.shift();
+			queue_1v1.splice(randomNumber, 1);
 
-			if (intervalId !== null && queue.length < 2) {
+			if (intervalId !== null && queue_1v1.length < 2) {
 				console.log('Ending 1v1 Queue...');
 				clearInterval(intervalId);
 				intervalId = null;
@@ -59,7 +61,7 @@ function searchPlayers(interaction) {
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('x1')
+		.setName('1v1')
 		.setDescription('Comandos relacionados a 1v1')
 		.addSubcommand((subcommand) => subcommand.setName('enter').setDescription('Entra na fila de 1v1.'))
 		.addSubcommand((subcommand) => subcommand.setName('exit').setDescription('Sai da fila de 1v1.')),
@@ -73,18 +75,20 @@ module.exports = {
 
 		switch (interaction.options._subcommand) {
 			case 'enter':
-				if (queue.find((player) => player.id === user.id) === undefined) {
+				if (queue_1v1.find((player) => player.id === user.id) === undefined) {
 					await interaction.reply({
 						content: 'Você entrou na fila.',
 						ephemeral: true,
 					});
 
-					queue.push(user);
+					queue_1v1.push(user);
 
-					if (intervalId === null && queue.length > 1) {
+					if (intervalId === null && queue_1v1.length > 1) {
 						console.log('Starting 1v1 Queue...');
 						intervalId = setInterval(() => searchPlayers(interaction), searchInterval);
 					}
+
+					editQueueLog(interaction.client, interaction.commandGuildId, queue_1v1.length, queue_1v1.length);
 				} else {
 					await interaction.reply({
 						content: 'Você já está na fila!',
@@ -93,7 +97,7 @@ module.exports = {
 				}
 				break;
 			case 'exit':
-				if (queue.find((player) => player.id === user.id) === undefined) {
+				if (queue_1v1.find((player) => player.id === user.id) === undefined) {
 					await interaction.reply({
 						content: 'Você não está na fila!',
 						ephemeral: true,
@@ -104,13 +108,21 @@ module.exports = {
 						ephemeral: true,
 					});
 
-					queue = queue.filter((player) => player.id !== user.id);
+					const userIndex = queue_1v1.map((player, index) => {
+						if (player.id == user.id) {
+							return index;
+						}
+					});
 
-					if (intervalId !== null && queue.length < 2) {
+					queue_1v1.splice(userIndex, 1);
+
+					if (intervalId !== null && queue_1v1.length < 2) {
 						console.log('Ending 1v1 Queue...');
 						clearInterval(intervalId);
 						intervalId = null;
 					}
+
+					editQueueLog(interaction.client, interaction.commandGuildId, queue_1v1.length, queue_1v1.length);
 				}
 				break;
 		}
