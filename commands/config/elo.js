@@ -2,6 +2,9 @@ const fs = require('node:fs');
 const { SlashCommandBuilder, userMention } = require('discord.js');
 const { guilds } = require('../../data.json');
 const { elos } = require('../../data.json');
+const { queue_1v1 } = require('../../utils/queue');
+const isUserInQueue1v1 = require('../../utils/isUserInQueue1v1');
+const { message_elo, cargos_elos } = require('../../utils/const');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -31,16 +34,18 @@ module.exports = {
 				.setName('get')
 				.setDescription('Pega o elo de alguém')
 				.addUserOption((option) =>
-					option.setName('jogador').setDescription('Qual jogador pegar o elo.').setRequired(true)
+					option.setName('jogador').setDescription('Verificar o elo de qual jogador?').setRequired(true)
 				)
 		),
 	async execute(interaction) {
 		const options = interaction.options._hoistedOptions;
+		const guildId = interaction.commandGuildId;
+		const userId = interaction.user.id;
 
 		switch (interaction.options._subcommand) {
 			case 'get':
 				let target = guilds.map((guild) => {
-					if (guild.id == interaction.commandGuildId) {
+					if (guild.id == guildId) {
 						if (!guild.data[options[0].value]) {
 							return undefined;
 						}
@@ -48,38 +53,59 @@ module.exports = {
 					}
 				})[0];
 
-				await interaction.reply(
-					`Os elos de ${userMention(options[0].value)} ${
-						target
-							? `são: \`\`\`solo: ${elos[target.solo].name}\nduo: ${elos[target.duo].name}\`\`\``
-							: 'estão indefinidos.'
-					}`
-				);
+				await interaction.reply({
+					embeds: [message_elo(interaction.client.users.cache.get(options[0].value), target)],
+				});
 				break;
 			case 'set':
-				const newElo = options[0].value;
-				const category = options[1].value;
+				if (!isUserInQueue1v1()) {
+					const newElo = options[0].value;
+					const category = options[1].value;
 
-				await interaction.reply(`Seu elo na categoria ${category} agora é ${newElo}.`);
+					const guild = interaction.client.guilds.cache.get(guildId);
+					const member = guild.members.cache.get(userId);
 
-				guilds.map((guild) => {
-					if (guild.id == interaction.commandGuildId) {
-						if (!guild.data[interaction.user.id]) {
-							guild.data[interaction.user.id] = {
-								solo: '0',
-								duo: '0',
-							};
+					const roles = member.roles.cache;
+
+					console.log(cargos_elos[category]);
+					roles.forEach(async (role) => {
+						if (cargos_elos[category].includes(role.id)) {
+							console.log(`TEM O CARGO ${role.name}`);
+
+							const guildRole = guild.roles.cache.get(role.id);
+							await member.roles.remove(guildRole);
 						}
+					});
 
-						guild.data[interaction.user.id][category] = newElo;
-					}
-				});
+					await member.roles.add(cargos_elos[category][newElo]);
+					await interaction.reply(
+						`Seu elo na categoria ${category} agora é ${elos[newElo].name}, você ainda pode subir muito mais!`
+					);
 
-				let data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
+					guilds.map((guild) => {
+						if (guild.id == guildId) {
+							if (!guild.data[userId]) {
+								guild.data[userId] = {
+									solo: '0',
+									duo: '0',
+								};
+							}
 
-				data.guilds = guilds;
+							guild.data[userId][category] = newElo;
+						}
+					});
 
-				fs.writeFileSync('./data.json', JSON.stringify(data));
+					let data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
+
+					data.guilds = guilds;
+
+					fs.writeFileSync('./data.json', JSON.stringify(data));
+				} else {
+					await interaction.reply({
+						content: 'Saia da fila antes de mudar seu elo!',
+						ephemeral: true,
+					});
+				}
 				break;
 		}
 	},

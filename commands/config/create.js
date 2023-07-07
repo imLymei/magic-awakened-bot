@@ -1,8 +1,8 @@
 const fs = require('node:fs');
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { guilds } = require('../../data.json');
 const { clientId } = require('../../config.json');
-const { queue_1v1 } = require('../../utils/queue');
+const { queue_1v1, queue_2v2 } = require('../../utils/queue');
 const { log_message } = require('../../utils/const');
 const getGuildInData = require('../../utils/getGuildInData');
 
@@ -32,7 +32,7 @@ module.exports = {
 					const messageId = guild.queue_log.messageId;
 					const channel = interaction.client.channels.cache.get(channelId);
 
-					const logMessage = log_message(queue_1v1, queue_1v1);
+					const logMessage = log_message(queue_1v1, queue_2v2);
 
 					let data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
 
@@ -51,7 +51,7 @@ module.exports = {
 								setTimeout(
 									() =>
 										channel
-											.send(logMessage)
+											.send({ embeds: [logMessage] })
 											.then((message) => {
 												guild.queue_log.channelId = channelId;
 												guild.queue_log.messageId = message.id;
@@ -66,7 +66,7 @@ module.exports = {
 							.catch(console.error);
 					} else
 						channel
-							.send(logMessage)
+							.send({ embeds: [logMessage] })
 							.then((message) => {
 								guild.queue_log.channelId = channelId;
 								guild.queue_log.messageId = message.id;
