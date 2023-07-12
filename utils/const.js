@@ -13,7 +13,7 @@ module.exports = {
 			)
 			.addFields(
 				{ name: 'Fila 1v1', value: `${queue_1v1.length} jogadores`, inline: true },
-				{ name: 'Fila 2v2', value: `${queue_2v2.length} jogadores`, inline: true },
+				{ name: 'Fila 2v2', value: 'Em breve.', inline: true },
 				{ name: 'Procurando dupla', value: `${duo_search.length} jogadores`, inline: true },
 				{ name: 'Floresta', value: 'Em breve.', inline: true },
 				{ name: 'Dormitório', value: 'Em breve.', inline: true },
